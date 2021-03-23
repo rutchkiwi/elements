@@ -16,5 +16,23 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    
+    Inc16(in=feedback, out=incremented);
+    
+    // Combinatorial logic. 
+	// The latter it goes, the higher priority it is.
+	// As the lower ones will just ignore the previous
+	// if their flag is set.
+
+    // Increment if inc set
+    Mux16(a=feedback, b=incremented, sel=inc, out=incrementedMaybe);
+
+    // Load new value
+    Mux16(a=incrementedMaybe, b=in, sel=load, out=incAndLoadedMaybe);
+
+    // Reset
+    Mux16(a=incAndLoadedMaybe, b=false, sel=reset, out=forRegister);
+
+    Register(in=forRegister, load=true, out=out, out=feedback);
+
 }
