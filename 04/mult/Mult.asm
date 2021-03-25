@@ -9,4 +9,34 @@
 // This program only needs to handle arguments that satisfy
 // R0 >= 0, R1 >= 0, and R0*R1 < 32768.
 
-// Put your code here.
+
+// M always refers to the memory word 
+// who's address is in A.
+
+// @ loads the value given into A.
+// M means the memory at A
+
+@R2
+M=0
+
+(LOOP)
+
+// Jump to end if R0 is 0
+@R0     
+D=M     
+@END    
+D;JLE   
+
+// Loop body
+@R1
+D=M
+@R2
+M=M+D  // Add R1 to R2
+
+@R0
+M=M-1  // Decrement R0
+
+@LOOP  
+A;JMP  // Jump to loop start
+
+(END)
