@@ -43,12 +43,23 @@ CHIP CPU {
     // Load A from instruction when it's an M instruction (0xxx...)
     Not(in=instruction[15], out=isMInstruction);
     
-    // A Register 
-    ARegister(in=instruction, load=isMInstruction, out=aOut, out[0..14]=addressM);
+    // A Register.
+    // Tt can be loaded with either an A instruction or from the ALU output.
+    Mux16(a=instruction, b=aluOut, sel=instruction[15], out=inputForA);
+    // It shoud store it's input if it's either 
+    //  - an A instruction
+    //  - The corresponding d bit is set (i[5])
+    Not(in=instruction[15], out=isAInstruction);
+    Or(a=isAInstruction, b=instruction[5], out=loadA);
+    ARegister(in=inputForA, load=loadA, out=aOut, out[0..14]=addressM);
 
     // D register
     And(a=instruction[15], b=instruction[4], out=loadDFromALU);
     DRegister(in=aluOut, load=loadDFromALU, out=dOut);
+
+
+    // Feed A or M to the ALU depending on the instruction a bit [12]
+    Mux16(a=aOut, b=inM, sel=instruction[12], out=amALUInput);
 
 //
 //    IN  // 16-bit inputs:
@@ -68,7 +79,7 @@ CHIP CPU {
 //        zr, // 1 if out=0, 0 otherwise
 //        ng; // 1 if out<0, 0 otherwise
 
-    ALU(x=dOut, y=aOut,
+    ALU(x=dOut, y=amALUInput,
         
         zx=instruction[11], 
         nx=instruction[10],
@@ -77,13 +88,29 @@ CHIP CPU {
         f= instruction[7],
         no=instruction[6],
         
-        out=outM,
-        out=aluOut
+        out=outM, out=aluOut,
+        zr=zr, ng=ng
     );
 
 
+    // writeM flag
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // The program counter should load the value of A
+    // when the jump condition is fulfilled.
+    Not(in=ng, out=zeroOrPos);
+    Not(in=zr, out=nonZero);
+    And(a=nonZero, b=zeroOrPos, out=positive);
+
+    And(a=instruction[2], b=ng, out=jumpNegative); // output negative
+    And(a=instruction[1], b=zr, out=jumpZero); // output zero
+    And(a=instruction[0], b=positive, out=jumpPositive); // output positive
+    
+    Or8Way(in[0]=jumpNegative, in[1]=jumpZero, in[2]=jumpPositive, out=jumpWantsToJump);
+    
+    And(a=instruction[15], b=jumpWantsToJump, out=jump); // when it's a C instruction
 
 
-    PC(inc=true, out[0..14]=pc);
+    PC(in=aOut, load=jump, inc=true, reset=reset, out[0..14]=pc);
 
 }
