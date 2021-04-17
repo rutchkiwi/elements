@@ -1,7 +1,8 @@
 (ns assembler.core
   (:gen-class)
   (:require [clojure.java.io :as io]
-            [clojure.string :as cs]))
+            [clojure.string :as cs]
+            [clojure.pprint :as pprint]))
 
 (def c-codes {"0"   "101010"
               "1"   "111111"
@@ -20,7 +21,17 @@
               "D-A" "010011"
               "A-D" "000111"
               "D&A" "000000"
-              "D|A" "010101"})
+              "D|A" "010101"
+              "M"   "110000"
+              "!M"  "110001"
+              "-M"  "110011"
+              "M+1" "110111"
+              "M-1" "110010"
+              "D+M" "000010"
+              "D-M" "010011"
+              "M-D" "000111"
+              "D&M" "000000"
+              "D|M" "010101"})
 
 (def d-codes {"null" "000"
               "M"    "001"
@@ -45,7 +56,7 @@
     (printf "C instruction. %s\n" l)
     (str
       "111"
-      "0"                                           ;a
+      (if a "1" "0") ;a
       (c-codes calc)
       ""
       (d-codes dest)
@@ -64,7 +75,7 @@
                (if (cs/starts-with? l "@")
                  ; A instruction
                  ; write as binary
-                 "0000000000000000"
+                 (pprint/cl-format nil "0~15,'0',B" (cs/replace l "@" ""))
                  ; C instruction
                  (parse-c l)))))))
 
