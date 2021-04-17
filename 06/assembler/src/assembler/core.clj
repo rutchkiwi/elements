@@ -33,7 +33,7 @@
               "D&M" "000000"
               "D|M" "010101"})
 
-(def d-codes {"null" "000"
+(def d-codes {nil    "000"
               "M"    "001"
               "D"    "010"
               "MD"   "011"
@@ -42,26 +42,42 @@
               "AD"   "110"
               "AMD"  "111"})
 
-(defn parser [l]
-  ())
+(def jmp-codes {nil   "000"
+                "JGT" "001"
+                "JEQ" "010"
+                "JGE" "011"
+                "JLT" "100"
+                "JNE" "101"
+                "JLE" "110"
+                "JMP" "111"})
+
 
 (defn parse-c [l]
-  (let [[dest calc] (cond
-                      (cs/includes? l "=")
-                      (cs/split l #"=|;")
+  (let [[dest calc jmp]
 
-                      :default
-                      (cs/split l #""))
+        (cond
+          (and (cs/includes? l "=") (cs/includes? l "="))
+          (let [[dest calc jmp] (cs/split l #"=|;")]
+            [dest calc jmp])
+
+          (cs/includes? l "=")
+          (let [[dest calc] (cs/split l #"=")]
+            [dest calc nil])
+
+          :default
+          (let [[calc jmp] (cs/split l #";")]
+            [nil calc jmp]))
+
         a (cs/includes? calc "M")]
+
     (printf "C instruction. %s\n" l)
+    (printf "calc: %s | comp: %s dest: %s jmp: %s" calc(c-codes calc) (d-codes dest) (jmp-codes jmp))
     (str
       "111"
       (if a "1" "0") ;a
       (c-codes calc)
-      ""
       (d-codes dest)
-      ""
-      "000")))
+      (jmp-codes jmp))))
 
 (defn -main
   [& args]
@@ -75,7 +91,7 @@
                (if (cs/starts-with? l "@")
                  ; A instruction
                  ; write as binary
-                 (pprint/cl-format nil "0~15,'0',B" (cs/replace l "@" ""))
+                 (pprint/cl-format nil "0~15,'0',B" (Integer/parseInt (cs/replace l "@" "")))
                  ; C instruction
                  (parse-c l)))))))
 

@@ -1,6 +1,7 @@
 (ns assembler.test
   (:require [clojure.test :refer :all]
-            [assembler.core :as core]))
+            [assembler.core :as core]
+            [clojure.java.io :as io]))
 
 
 
@@ -26,3 +27,10 @@
             "0000000000001110"
             "1110101010000111"]
            binary))))
+
+(deftest rectL
+  (is (= (core/-main "/Users/viktor/dev/nand2tetris/projects/06/rect/RectL.asm")
+         (line-seq (io/reader "/Users/viktor/dev/nand2tetris/projects/06/rect/RectL.hack")))))
+
+(deftest jump
+  (is (= "1110001100000001" (core/parse-c "D;JGT"))))
